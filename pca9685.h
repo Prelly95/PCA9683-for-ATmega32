@@ -1,8 +1,8 @@
 #ifndef PCA9685_H
 #define PCA9685_H
 
-#define PCA9685_MODE1_SETTINGS	0x01
-#define PCA9685_MODE2_SETTINGS	0x04
+#define PCA9685_MODE1_SETTINGS	0x01	//mode 1 register settings (check datasheet)
+#define PCA9685_MODE2_SETTINGS	0x04	//mode 2 register settings (check datasheet)
 
 #define PCA9685_ADDRESS		0xA0		//SET THIS WITH DIP SWITCH [1 A5 A4 A3 A2 A1 A0 #R/W]
 #define PCA9685_CLOCK_SPEED 25000000	//Device clock speed

@@ -29,24 +29,30 @@ int main(void)
 	// Send initial string
 	printf_P(PSTR("\014")); //clear terminal
 	printf_P(PSTR("\nHello world! %x\n\n"), 17);
+
+	//prints out the modes and settings registers
 	PCA9685_PrintSettings();
 
 	_delay_ms(500);
 
+	//set some test/example outputs
 	PCA9685_SetPinPWM(0, 0x0E65, 0x0CCB);
 	PCA9685_SetPinPWM(1, 0x0199, 0x04CC);
 	PCA9685_SetPinPWM(2, 0x0199, 0x04CC);
 
 	_delay_ms(1000);
 
+	//Test the sleep functionality
 	PCA9685_Sleep();
 
 	_delay_ms(1000);
 
+	//restart using i2c library to test the functionality is the same
 	I2C_WriteBit(PCA9685_ADDRESS, PCA9685_MODE1, RESTART, 1);
 
     for(;/*ever*/;)
     {
+		//cycles through some test pwm signams on channel 0
 		PCA9685_SetPinPWM(0, 0x0E65, 0x0CCB);
 		_delay_ms(1000);
 		PCA9685_SetPinPWM(0, 0x0199, 0x04CC);
@@ -59,6 +65,8 @@ int main(void)
 		_delay_ms(1000);
 		PCA9685_SetPinPWM(0, 0x0199, 0x04CC);
 		_delay_ms(1000);
+
+		//comand process unrelated to pca
         clb_process(&clb);
     }
     return 0;
