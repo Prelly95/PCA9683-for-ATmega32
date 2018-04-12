@@ -1,6 +1,9 @@
 #ifndef PCA9685_H
 #define PCA9685_H
 
+#define PCA9685_MODE1_SETTINGS	0x01
+#define PCA9685_MODE2_SETTINGS	0x04
+
 #define PCA9685_ADDRESS		0xA0		//SET THIS WITH DIP SWITCH [1 A5 A4 A3 A2 A1 A0 #R/W]
 #define PCA9685_CLOCK_SPEED 25000000	//Device clock speed
 
@@ -46,4 +49,6 @@ uint8_t PCA9685_SetPWMFreq(uint16_t freq);
 uint8_t PCA9685_SetPinPWM(uint8_t channel, uint16_t ON, uint16_t OFF);
 uint8_t PCA9685_WriteReg(uint8_t reg, uint8_t data);
 uint8_t PCA9685_ReadReg(uint8_t reg, uint8_t *data);
+void PCA9685_PrintSettings(void);
+
 #endif

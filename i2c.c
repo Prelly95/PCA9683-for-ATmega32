@@ -6,62 +6,75 @@
 
 #include "i2c.h"
 
-#define F_SCL 100000UL // SCL frequency
+#define F_SCL 400000UL // SCL frequency
 #define Prescaler 1
+#define I2C_TIMER_DELAY 0xFF
 #define TWBR_val ((((F_CPU / F_SCL) / Prescaler) - 16 ) / 2)//formula from data sheet
 
 void I2C_Init(void)
 {
+	TWSR = 0;
 	TWBR = (uint8_t)TWBR_val;
 }
 
 uint8_t I2C_Start(uint8_t address)
 {
-	// reset TWI control register
-	TWCR = 0;
-	// transmit START condition
+	uint32_t  i2c_timer = 0;
+    uint8_t   twst;
+
+	// send START condition
 	TWCR = (1<<TWINT) | (1<<TWSTA) | (1<<TWEN);
-	// wait for end of transmission
-	while( !(TWCR & (1<<TWINT)));
 
-	// check if the start condition was successfully transmitted
-	if((TWSR & 0xF8) != TW_START)
-	{
+	// wait until transmission completed
+	i2c_timer = I2C_TIMER_DELAY;
+	while(!(TWCR & (1<<TWINT)) && i2c_timer--);
+	if(i2c_timer == 0)
 		return 1;
-		printf_P(PSTR("\nERROR\n\n"));
-	}
 
-	// load slave address into data register
+	// check value of TWI Status Register. Mask prescaler bits.
+	twst = TW_STATUS & 0xF8;
+	if ( (twst != TW_START) && (twst != TW_REP_START)) return 1;
+
+	// send device address
 	TWDR = address;
-	// start transmission of address
 	TWCR = (1<<TWINT) | (1<<TWEN);
-	// wait for end of transmission
-	while( !(TWCR & (1<<TWINT)) );
 
-	// check if the device has acknowledged the READ / WRITE mode
-	uint8_t twst = TW_STATUS & 0xF8;
-	if ( (twst != TW_MT_SLA_ACK) && (twst != TW_MR_SLA_ACK) )
-	{
+	// wail until transmission completed and ACK/NACK has been received
+	i2c_timer = I2C_TIMER_DELAY;
+	while(!(TWCR & (1<<TWINT)) && i2c_timer--);
+	if(i2c_timer == 0)
 		return 1;
-		printf_P(PSTR("\nERROR\n\n"));
-	}
+
+	// check value of TWI Status Register. Mask prescaler bits.
+	twst = TW_STATUS & 0xF8;
+	if ( (twst != TW_MT_SLA_ACK) && (twst != TW_MR_SLA_ACK) ) return 1;
 
 	return 0;
 }
 
 uint8_t I2C_Write(uint8_t data)
 {
-	// load data into data register
-	TWDR = data;
-	// start transmission of data
-	TWCR = (1<<TWINT) | (1<<TWEN);
-	// wait for end of transmission
-	while( !(TWCR & (1<<TWINT)));
+	uint32_t  i2c_timer = 0;
+	uint8_t   twst;
 
-	if( (TWSR & 0xF8) != TW_MT_DATA_ACK )
+	// send data to the previously addressed device
+	TWDR = data;
+	TWCR = (1<<TWINT) | (1<<TWEN);
+
+	// wait until transmission completed
+	i2c_timer = I2C_TIMER_DELAY;
+
+	while(!(TWCR & (1<<TWINT)) && i2c_timer--);
+	if(i2c_timer == 0)
 	{
 		return 1;
-		printf_P(PSTR("\nERROR\n\n"));
+	}
+
+	// check value of TWI Status Register. Mask prescaler bits
+	twst = TW_STATUS & 0xF8;
+	if( twst != TW_MT_DATA_ACK)
+	{
+		return 1;
 	}
 
 	return 0;
@@ -184,9 +197,14 @@ uint8_t I2C_ReadReg(uint8_t devaddr, uint8_t regaddr, uint16_t length, uint8_t* 
 
 void I2C_Stop(void)
 {
-	// transmit STOP condition
+	uint32_t  i2c_timer = 0;
+
+	/* send stop condition */
 	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
-	while(TWCR & (1<<TWSTO));
+
+	// wait until stop condition is executed and bus released
+	i2c_timer = I2C_TIMER_DELAY;
+	while((TWCR & (1<<TWSTO)) && i2c_timer--);
 }
 
 uint8_t I2C_ReadByte(uint8_t devAddr, uint8_t regAddr, uint8_t *data)
